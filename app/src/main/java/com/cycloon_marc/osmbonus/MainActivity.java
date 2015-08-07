@@ -5,10 +5,12 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewTreeObserver;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.bonuspack.overlays.Marker;
@@ -23,7 +25,7 @@ import org.osmdroid.views.MapView;
 
 import java.util.ArrayList;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends AppCompatActivity {
     private MapView map;
     private IMapController mapController;
 
@@ -36,18 +38,30 @@ public class MainActivity extends ActionBarActivity {
         final Activity activity = this;
 
         map = (MapView) findViewById(R.id.map);
-        map.setTileSource(TileSourceFactory.MAPNIK);
         map.setBuiltInZoomControls(true);
         map.setMultiTouchControls(true);
 
         final GeoPoint startPoint = new GeoPoint(52.976009, 6.558900);
         mapController = map.getController();
         mapController.setZoom(14);
-        mapController.setCenter(startPoint);
+        //mapController.setCenter(startPoint);
+        ViewTreeObserver vto = map.getViewTreeObserver();
+        vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                map.getController().setCenter(startPoint);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
 
+                    map.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                } else {
+                    map.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                }
+            }
+        });
+        map.setTileSource(TileSourceFactory.MAPNIK);
         Marker startMarker = new Marker(map);
         startMarker.setPosition(startPoint);
-        startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+        startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
 
         startMarker.setIcon(getResources().getDrawable(R.drawable.marker_departure));
         startMarker.setTitle("Start point");
@@ -58,17 +72,18 @@ public class MainActivity extends ActionBarActivity {
         new Thread(new Runnable() {
             public void run() {
                 RoadManager roadManager = new OSRMRoadManager();
-                ArrayList<GeoPoint> waypoints = new ArrayList<GeoPoint>();
+                ArrayList<GeoPoint> waypoints = new ArrayList<>();
                 waypoints.add(startPoint);
                 GeoPoint endPoint = new GeoPoint(53.065346, 6.326113);
                 waypoints.add(endPoint);
 
                 Marker endMarker = new Marker(map);
                 endMarker.setPosition(endPoint);
-                endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
                 endMarker.setIcon(getResources().getDrawable(R.drawable.marker_destination));
                 endMarker.setTitle("End point");
                 map.getOverlays().add(endMarker);
+                mapController.setCenter(endPoint);
                 map.invalidate();
 
                 final Road road = roadManager.getRoad(waypoints);
