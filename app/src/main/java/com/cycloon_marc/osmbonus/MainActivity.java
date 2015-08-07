@@ -15,7 +15,7 @@ import android.view.ViewTreeObserver;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.bonuspack.overlays.Marker;
 import org.osmdroid.bonuspack.overlays.Polyline;
-import org.osmdroid.bonuspack.routing.OSRMRoadManager;
+import org.osmdroid.bonuspack.routing.MapQuestRoadManager;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.bonuspack.routing.RoadNode;
@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
         map.setBuiltInZoomControls(true);
         map.setMultiTouchControls(true);
 
-        final GeoPoint startPoint = new GeoPoint(52.976009, 6.558900);
+        final GeoPoint startPoint = new GeoPoint(53.065346, 6.326113);
         mapController = map.getController();
         mapController.setZoom(14);
         //mapController.setCenter(startPoint);
@@ -71,10 +71,15 @@ public class MainActivity extends AppCompatActivity {
 
         new Thread(new Runnable() {
             public void run() {
-                RoadManager roadManager = new OSRMRoadManager();
+                //orginal version
+                //RoadManager roadManager = new OSRMRoadManager();
+                //mapquest version
+                RoadManager roadManager = new MapQuestRoadManager("ji4nVIWGbEL8FANiCYM0JNGet7Fj9O8B");
+                roadManager.addRequestOption("routeType=bicycle");
+                roadManager.addRequestOption("locale=nl_NL");
                 ArrayList<GeoPoint> waypoints = new ArrayList<>();
                 waypoints.add(startPoint);
-                GeoPoint endPoint = new GeoPoint(53.065346, 6.326113);
+                GeoPoint endPoint = new GeoPoint(52.976009, 6.558900);
                 waypoints.add(endPoint);
 
                 Marker endMarker = new Marker(map);
