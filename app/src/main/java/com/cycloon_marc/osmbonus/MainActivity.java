@@ -2,9 +2,7 @@ package com.cycloon_marc.osmbonus;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.res.Resources;
-import android.content.res.TypedArray;
-import android.graphics.drawable.Drawable;
+import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -15,13 +13,13 @@ import android.view.Menu;
 import android.view.ViewTreeObserver;
 
 import org.osmdroid.api.IMapController;
+import org.osmdroid.bonuspack.kml.KmlDocument;
+import org.osmdroid.bonuspack.overlays.FolderOverlay;
 import org.osmdroid.bonuspack.overlays.Marker;
-import org.osmdroid.bonuspack.overlays.Polyline;
 import org.osmdroid.bonuspack.routing.MapQuestRoadManager;
-import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
-import org.osmdroid.bonuspack.routing.RoadNode;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.BoundingBoxE6;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.OverlayItem;
@@ -32,6 +30,8 @@ public class MainActivity extends AppCompatActivity {
     private MapView map;
     private IMapController mapController;
 
+
+    GeoPoint beginPoint;
     LocationManager locationManager;
     ArrayList<GeoPoint> waypoints = new ArrayList<>();
     ArrayList<OverlayItem> overlayItemArray;
@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
 
         final Activity activity = this;
@@ -50,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
         final GeoPoint startPoint = new GeoPoint(53.065346, 6.326113);
         mapController = map.getController();
         mapController.setZoom(14);
-        //mapController.setCenter(startPoint);
+
         ViewTreeObserver vto = map.getViewTreeObserver();
 
         //set location
@@ -59,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
         if(lastLocation != null){
             updateLoc(lastLocation);
         }
-
         vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
@@ -72,16 +72,32 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        map.setTileSource(TileSourceFactory.MAPNIK);
-        Marker startMarker = new Marker(map);
+    /*    vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                //map.getController().setCenter(startPoint);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+
+                    map.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                } else {
+                    map.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                }
+            }
+        });*/
+        map.setTileSource(TileSourceFactory.CYCLEMAP);
+       /* Marker startMarker = new Marker(map);
         startMarker.setPosition(startPoint);
         startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
 
         startMarker.setIcon(getResources().getDrawable(R.drawable.marker_departure));
         startMarker.setTitle("Start point");
 
-        map.getOverlays().add(startMarker);
-        map.invalidate();
+       // map.getOverlays().add(startMarker);*/
+
+
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("file/*");
+       // startActivityForResult(intent, YOUR_RESULT_CODE);
 
         new Thread(new Runnable() {
             public void run() {
@@ -92,6 +108,8 @@ public class MainActivity extends AppCompatActivity {
                 roadManager.addRequestOption("routeType=bicycle");
                 roadManager.addRequestOption("locale=nl_NL");
                 //final ArrayList<GeoPoint> waypoints = new ArrayList<>();
+
+               /*working code with start & stop
                 waypoints.add(startPoint);
                 GeoPoint endPoint = new GeoPoint(52.976009, 6.558900);
                 waypoints.add(endPoint);
@@ -102,19 +120,18 @@ public class MainActivity extends AppCompatActivity {
                 endMarker.setIcon(getResources().getDrawable(R.drawable.marker_destination));
                 endMarker.setTitle("End point");
                 map.getOverlays().add(endMarker);
-                mapController.setCenter(endPoint);
-                map.invalidate();
+                //mapController.setCenter(endPoint);
+                map.invalidate();*/
 
-                final Road road = roadManager.getRoad(waypoints);
+
+               /*) final Road road = roadManager.getRoad(waypoints);
                 runOnUiThread(new Runnable() {
                     public void run() {
                         if (road.mStatus != Road.STATUS_OK) {
                             //handle error... warn the user, etc.
                         }
-
                         Polyline roadOverlay = RoadManager.buildRoadOverlay(road, activity);
                         map.getOverlays().add(roadOverlay);
-
                         Drawable nodeIcon = getResources().getDrawable(R.drawable.marker_node);
                         for (int i=0; i<road.mNodes.size(); i++){
                             RoadNode node = road.mNodes.get(i);
@@ -138,9 +155,28 @@ public class MainActivity extends AppCompatActivity {
                         }
                         map.invalidate();
                     }
-                });
-            }
-        }).start();
+                });*/
+
+               final  KmlDocument kmlDocument = new KmlDocument();
+                 runOnUiThread(new Runnable() {
+                public void run() {
+                        kmlDocument.parseKMLUrl("http://mapsengine.google.com/map/kml?mid=z6IJfj90QEd4.kUUY9FoHFRdE");
+                        FolderOverlay kmlOverlay = (FolderOverlay) kmlDocument.mKmlRoot.buildOverlay(map, null, null, kmlDocument);
+                         map.getOverlays().add(kmlOverlay);
+
+                     //   Polyline roadOverlay = RoadManager.buildRoadOverlay(road, activity);
+                      //  map.getOverlays().add(roadOverlay);
+                        map.invalidate();
+                        BoundingBoxE6 bb = kmlDocument.mKmlRoot.getBoundingBox();
+
+                    // De volgende code geeft error omdat kml inlezen leeg is denk ik.
+                    //   map.zoomToBoundingBox(bb);
+                       // map.getController().setCenter(bb.getCenter());
+                  }
+
+
+            });
+        }}).start();
     }
     protected void onResume() {
             // TODO Auto-generated method stub
@@ -149,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, myLocationListener);
         }
     private void updateLoc(Location loc){
-        GeoPoint locGeoPoint = new GeoPoint(loc.getLatitude(), loc.getLongitude());
+       final  GeoPoint locGeoPoint = new GeoPoint(loc.getLatitude(), loc.getLongitude());
         mapController.setCenter(locGeoPoint);
 
         setOverlayLoc(loc);
@@ -177,7 +213,9 @@ public class MainActivity extends AppCompatActivity {
         beginMarker.setIcon(getResources().getDrawable(R.drawable.ic_menu_mylocation));
         beginMarker.setTitle("Begin point");
         map.getOverlays().add(beginMarker);
-        mapController.setCenter(beginPoint);
+       // mapController.setCenter(beginPoint);
+
+
         map.invalidate();
 
 
